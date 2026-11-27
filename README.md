@@ -133,3 +133,21 @@ Thank you for using DocuChat!
 
 - [GitHub](https://github.com/chandu-4e4)
 - [LinkedIn](https://www.linkedin.com/in/saichandudammagalla/)
+
+1. Basic questions
+Test whether your application retrieves simple information.
+- What is the main objective of this PDF?
+- Who is this roadmap designed for?
+- Why is Python important for Generative AI engineers?
+- What is prompt engineering?
+- What are vector databases?
+- What is RAG?
+2. Intermediate questions
+Test whether your application understands technical concepts.
+- Explain the RAG pipeline step by step.
+- What are the different chunking strategies?
+- What embedding models are mentioned in the document?
+- What is the difference between semantic search and keyword search?
+- What are the different vector similarity metrics?
+- How can we prevent prompt injection?
+- What resources are recommended for learning LangChain?

@@ -36,6 +36,7 @@ PERSIST_DIRECTORY = "./chroma_langchain_db"
 # ==========================================
 
 def load_pdf(file_path):
+
     print("\nLoading PDF document...")
 
     loader = PyPDFLoader(file_path)
@@ -95,9 +96,6 @@ def create_vector_store(all_splits, embedding_model):
         persist_directory=PERSIST_DIRECTORY
     )
 
-    # Add documents only when the collection is empty.
-    # This avoids duplicate documents on every application restart.
-
     if vector_store._collection.count() == 0:
 
         print("Adding documents to vector database...")
@@ -118,7 +116,7 @@ def create_vector_store(all_splits, embedding_model):
 # 6. RETRIEVE RELEVANT CONTEXT
 # ==========================================
 
-def retrieve_context(query, vector_store, k=2):
+def retrieve_context(query, vector_store, k=6):
 
     retrieved_docs = vector_store.similarity_search(
         query,
@@ -160,7 +158,7 @@ def docu_chat(user_query, vector_store, model):
     context, source_docs = retrieve_context(
         user_query,
         vector_store,
-        k=2
+        k=6
     )
 
     system_message = f"""
@@ -168,9 +166,13 @@ def docu_chat(user_query, vector_store, model):
 
     Answer the user's question using ONLY the provided context.
 
+    Provide clear, structured and easy-to-understand answers.
+
     Do not make up information.
+
     If the answer is not available in the context,
-    clearly mention that the document does not provide the answer.
+    clearly mention that the retrieved context does not
+    provide the answer.
 
     Context:
     {context}
@@ -189,8 +191,19 @@ def docu_chat(user_query, vector_store, model):
 
     response = model.invoke(messages)
 
+    answer = response.content
+
+    if isinstance(answer, list):
+
+        answer = "\n".join(
+            item.get("text", "")
+            for item in answer
+            if isinstance(item, dict)
+            and item.get("type") == "text"
+        )
+
     return {
-        "answer": response.content,
+        "answer": answer,
         "source_document": source_docs,
         "context_used": context
     }
@@ -206,21 +219,17 @@ def main():
     print("       DOCUCHAT - RAG ASSISTANT")
     print("=" * 50)
 
-    # Load and process PDF
     documents = load_pdf(PDF_URL)
 
     all_splits = split_documents(documents)
 
-    # Create embeddings
     embedding_model = create_embedding_model()
 
-    # Initialize vector database
     vector_store = create_vector_store(
         all_splits,
         embedding_model
     )
 
-    # Initialize Gemini
     model = initialize_llm()
 
     print("\nDocuChat is ready!")
@@ -251,10 +260,23 @@ def main():
 
             print("\nSource Documents:")
 
-            for doc in result["source_document"]:
-                print(doc.metadata)
+            displayed_sources = set()
 
-            print("\n" + "-" * 50)
+            for doc in result["source_document"]:
+
+                title = doc.metadata.get("title", "Unknown")
+                page = doc.metadata.get("page_label", "Unknown")
+                source = doc.metadata.get("source", "")
+
+                if (source, page) not in displayed_sources:
+
+                    print("Title:", title)
+                    print("Page:", page)
+                    print()
+
+                    displayed_sources.add((source, page))
+
+            print("-" * 50)
 
         except Exception as error:
             print(f"Error: {error}")
